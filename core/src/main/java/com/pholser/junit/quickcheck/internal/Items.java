@@ -54,8 +54,13 @@ public final class Items {
             return items.iterator().next();
         }
 
-        Object[] array = items.toArray(new Object[0]);
+        Object[] array = collectionToarray(items);
+
         return (T) array[random.nextInt(array.length)];
+    }
+
+    public static <T> Object[] collectionToarray(Collection<T> items) {
+        return items.toArray(new Object[0]);
     }
 
     public static <T> T chooseWeighted(

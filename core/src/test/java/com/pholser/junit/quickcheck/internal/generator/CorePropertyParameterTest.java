@@ -30,7 +30,9 @@ import static com.pholser.junit.quickcheck.internal.Reflection.defaultValueOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.any;
 
+import com.pholser.junit.quickcheck.internal.Items;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.When;
 import com.pholser.junit.quickcheck.generator.Generator;
@@ -43,14 +45,20 @@ import com.pholser.junit.quickcheck.test.generator.TestGeneratorSource;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Field;
 import java.lang.reflect.Parameter;
+import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
+import org.mockito.stubbing.Answer;
 
 public abstract class CorePropertyParameterTest {
     @Rule public final MockitoRule mockito = MockitoJUnit.rule();
@@ -66,33 +74,46 @@ public abstract class CorePropertyParameterTest {
     private final List<Object> propertyParameters = new ArrayList<>();
 
     @Before public final void beforeEach() throws Exception {
-        source = generatorSource();
-        primeSourceOfRandomness();
-        primeSeed();
-        primeQuantifier();
-        primeTrials();
+        try (MockedStatic<Items> mocked = Mockito.mockStatic(Items.class, Mockito.CALLS_REAL_METHODS)) {
+            mocked.when(() -> Items.collectionToarray(any())).thenAnswer(
+                new Answer() {
+                    public Object[] answer(InvocationOnMock invocation) {
+                        Collection collection = invocation.getArgument(0);
+                        Object[] array = collection.toArray(new Object[0]);
+                        Arrays.sort(array, (a,b) -> a.toString().compareTo(b.toString()));
+                        return array;
+                    }
+                }
+            );
 
-        repository =
-            new GeneratorRepository(randomForGeneratorRepo).register(source);
-        Iterable<Generator<?>> auxiliarySource = auxiliaryGeneratorSource();
-        if (auxiliarySource != null)
-            repository.register(auxiliarySource);
+            source = generatorSource();
+            primeSourceOfRandomness();
+            primeSeed();
+            primeQuantifier();
+            primeTrials();
 
-        int trials = trials();
-        PropertyParameterContext parameter =
-            new PropertyParameterContext(typeContext())
-                .annotate(annotatedElement());
-        parameter.addQuantifier(quantifier);
+            repository =
+                new GeneratorRepository(randomForGeneratorRepo).register(source);
+            Iterable<Generator<?>> auxiliarySource = auxiliaryGeneratorSource();
+            if (auxiliarySource != null)
+                repository.register(auxiliarySource);
 
-        PropertyParameterGenerationContext generator =
-            new PropertyParameterGenerationContext(
-                parameter,
-                repository,
-                distro,
-                randomForParameterGenerator,
-                new TupleParameterSampler(trials));
-        for (int i = 0; i < trials; ++i)
-            propertyParameters.add(generator.generate());
+            int trials = trials();
+            PropertyParameterContext parameter =
+                new PropertyParameterContext(typeContext())
+                    .annotate(annotatedElement());
+            parameter.addQuantifier(quantifier);
+
+            PropertyParameterGenerationContext generator =
+                new PropertyParameterGenerationContext(
+                    parameter,
+                    repository,
+                    distro,
+                    randomForParameterGenerator,
+                    new TupleParameterSampler(trials));
+            for (int i = 0; i < trials; ++i)
+                propertyParameters.add(generator.generate());
+        }
     }
 
     protected Iterable<Generator<?>> generatorSource() {
