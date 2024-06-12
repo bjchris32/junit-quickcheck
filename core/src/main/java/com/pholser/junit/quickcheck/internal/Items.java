@@ -29,6 +29,7 @@ import com.pholser.junit.quickcheck.random.SourceOfRandomness;
 import java.util.Collection;
 import java.util.List;
 import java.util.RandomAccess;
+import java.util.Arrays;
 
 public final class Items {
     private Items() {
@@ -55,6 +56,7 @@ public final class Items {
         }
 
         Object[] array = items.toArray(new Object[0]);
+        Arrays.sort(array, (a,b) -> a.toString().compareTo(b.toString()));
         return (T) array[random.nextInt(array.length)];
     }
 

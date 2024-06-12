@@ -58,6 +58,9 @@ public class SetOfSuperFloatPropertyParameterTest
             .thenReturn(0)
             .thenReturn(supertypes.indexOf(floatType))
             .thenReturn(0);
+        when(randomForGeneratorRepo.nextInt(anyInt()))
+            .thenReturn(0)
+            .thenReturn(2);
         when(distro.sampleWithMean(1, randomForParameterGenerator))
             .thenReturn(0);
         when(distro.sampleWithMean(2, randomForParameterGenerator))
